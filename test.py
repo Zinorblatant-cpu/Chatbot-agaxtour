@@ -7,7 +7,7 @@ from telegram.ext import (
     filters
 )
 
-TOKEN = '8536310042:AAFjWY5tPS-qJXL0016tJB5AO40mMUtR3QQ'
+TOKEN = 'SEU_TOKEN_AQUI'
 
 
 # === /start ===

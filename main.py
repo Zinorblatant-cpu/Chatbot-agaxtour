@@ -10,7 +10,7 @@ from telegram.ext import (
 
 
 # Substitua pelo seu token do BotFather (nunca compartilhe publicamente!)
-TOKEN = '8536310042:AAFjWY5tPS-qJXL0016tJB5AO40mMUtR3QQ'
+TOKEN = 'SEU_TOKEN_AQUI'
 
 # === COMANDO /start ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
