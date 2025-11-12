@@ -2,11 +2,16 @@ import time
 from telegram import Update
 from telegram.ext import ContextTypes
 
-TIME_LIMIT = 600
+TIME_LIMIT = 600  # 10 minutos
 
 async def check_timeout(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Se a sessão foi finalizada, não checa mais o tempo
+    if context.user_data.get("session_finished"):
+        return False
+
     start_time = context.user_data.get("start_time")
 
+    # Inicializa o tempo de início se ainda não existir
     if start_time is None:
         context.user_data["start_time"] = time.time()
         return False
@@ -18,4 +23,5 @@ async def check_timeout(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         context.user_data.clear()
         return True
+
     return False
