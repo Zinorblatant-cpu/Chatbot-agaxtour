@@ -4,11 +4,14 @@ from telegram.ext import (
     CommandHandler,
     ContextTypes,
     MessageHandler,
-    filters)
-
+    filters
+)
+import requests
 
 from modules.queue.token import generate_user_token
+from modules.gerenciamentoDeConsultores import enviar_mensagem_lead
 
+WEBHOOK_URL = "https://seilapora.app.n8n.cloud/webhook-test/PushInformationsOfBot"
 
 async def collect_reservation_intent(update: Update, context: ContextTypes.DEFAULT_TYPE):
     step = context.user_data.get('next')
@@ -16,24 +19,14 @@ async def collect_reservation_intent(update: Update, context: ContextTypes.DEFAU
 
     if step == 'reserve':
         if text in ['sim', 's']:
-            # pega a escolha feita anteriormente
             choice = context.user_data.get('choice')
 
-            # se for 1 ou 3, pula direto para a acomodação
-            if choice in ['Explora III', 'MSC Seaview']:
-                await update.message.reply_text(
+            await update.message.reply_text(
                     "Perfeito! ✨ Agora nos diga: em qual acomodação gostaria de viajar? "
                     "(single / duplo / triplo / quádruplo / suíte / cabine com varanda)"
                 )
-                context.user_data['next'] = 'accommodation'
-
-            # caso contrário, pergunta o transporte
-            else:
-                await update.message.reply_text(
-                    "Perfeito! ✨ Qual meio de transporte você gostaria de reservar? (carro / moto)"
-                )
-                context.user_data['next'] = 'transport'
-
+            context.user_data['next'] = 'accommodation'
+            
         elif text in ['não', 'n']:
             await update.message.reply_text(
                 "Tudo bem! 😊 Ficamos à disposição se quiser ver outras viagens."
@@ -43,20 +36,6 @@ async def collect_reservation_intent(update: Update, context: ContextTypes.DEFAU
             await update.message.reply_text(
                 "Responda apenas com sim ou não.", parse_mode="Markdown"
             )
-
-    elif step == 'transport':
-        transport = text.lower()
-        if transport in ['carro', 'moto']:
-            context.user_data['transport'] = transport
-            await update.message.reply_text(
-                f"Excelente! Você escolheu viajar de {transport}. ✈️🚌🚢\n\n"
-                "Agora, nos diga: em qual acomodação gostaria de viajar? "
-                "(single / duplo / triplo / quádruplo / suíte / cabine com varanda)",
-                parse_mode="Markdown"
-            )
-            context.user_data['next'] = 'accommodation'
-        else:
-            await update.message.reply_text("Informe apenas: carro ou moto.")
 
     elif step == 'accommodation':
         accommodation = text.lower()
@@ -90,8 +69,6 @@ async def collect_reservation_intent(update: Update, context: ContextTypes.DEFAU
             f"• Viagem: *{choice}*\n"
         )
 
-        if transport:
-            message += f"• Transporte: *{transport}*\n"
         message += (
             f"• Data desejada: *{date}*\n\n"
             "Um consultor Agaxtur entrará em contato para continuar o atendimento. Obrigado!"
@@ -99,6 +76,25 @@ async def collect_reservation_intent(update: Update, context: ContextTypes.DEFAU
 
         await update.message.reply_text(message, parse_mode="Markdown")
 
+        # 🔹 monta o JSON incluindo o telefone
+        data = {
+            "choice": choice,
+            "date": date,
+            "lead": "qualified lead",
+            **({"transport": transport} if transport else {}),
+            **({"phone": phone} if phone else {})
+        }
+
+        try:
+            response = requests.post(WEBHOOK_URL, json=data, timeout=10)
+            response.raise_for_status()
+            print(f"✅ Dados enviados com sucesso: {response.status_code}")
+        except requests.RequestException as e:
+            print(f"❌ Erro ao enviar dados para o webhook: {e}")
+
+        # limpa o contexto (mantendo apenas token)
         for key in list(context.user_data.keys()):
             if key not in ("session_finished", "token"):
                 del context.user_data[key]
+            
+        enviar_mensagem_lead()

@@ -9,6 +9,7 @@ from telegram.ext import (
 
 from modules.ask_reservation_intens import ask_reservation
 
+pdf_path = "/home/zinor/Documents/programing/agaxtuor/modules/exploraitinerario_p7_17.pdf"
 
 async def select_travel_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_input = update.message.text.strip()
@@ -28,8 +29,17 @@ async def select_travel_option(update: Update, context: ContextTypes.DEFAULT_TYP
             ),
             parse_mode="Markdown"
         )
+
+        with open(pdf_path, "rb") as pdf_file:
+            await update.message.reply_document(
+                document=pdf_file,
+                filename="ExploraIII_Agaxtur.pdf",
+                caption="📎 Aqui está o catálogo completo da viagem Explora III 🌍⚓",
+            )
+
         context.user_data['choice'] = 'Explora III'
         await ask_reservation(update, context)
+
 
     elif user_input == '2':
         await update.message.reply_text(
